@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swindle - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: #2196F3;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .continue-btn {
+            width: 100%;
+            padding: 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 24px;
+        }
+        
+        .continue-btn:hover {
+            background: #1976D2;
+        }
+        
+        .continue-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .terms {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .status-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status-info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="app-icon">👤</div>
+        
+        <h1 class="title">Welcome to Swindle</h1>
+        <p class="subtitle">Enter your mobile number to continue</p>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="phoneNumber" class="form-label">Mobile Number</label>
+                <input 
+                    type="tel" 
+                    id="phoneNumber" 
+                    class="form-input" 
+                    placeholder="Enter your 10-digit mobile number"
+                    maxlength="10"
+                >
+                <div id="phoneError" class="error-message"></div>
+            </div>
+            
+            <button type="submit" id="continueBtn" class="continue-btn">
+                <span id="btnText">Continue</span>
+                <span id="btnLoading" class="loading" style="display: none;"></span>
+            </button>
+        </form>
+        
+        <p class="terms">
+            By continuing, you agree to our Terms of Service and Privacy Policy
+        </p>
+    </div>
+
+    <script>
+        // Simulate user storage
+        let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+        
+        const form = document.getElementById('loginForm');
+        const phoneInput = document.getElementById('phoneNumber');
+        const phoneError = document.getElementById('phoneError');
+        const continueBtn = document.getElementById('continueBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+        const statusMessage = document.getElementById('statusMessage');
+        
+        // Phone number validation
+        phoneInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            validatePhone();
+        });
+        
+        function validatePhone() {
+            const phone = phoneInput.value;
+            if (phone.length === 0) {
+                showError('Please enter your mobile number');
+                return false;
+            }
+            if (phone.length !== 10) {
+                showError('Mobile number must be 10 digits');
+                return false;
+            }
+            hideError();
+            return true;
+        }
+        
+        function showError(message) {
+            phoneError.textContent = message;
+            phoneError.style.display = 'block';
+            phoneInput.style.borderColor = '#f44336';
+        }
+        
+        function hideError() {
+            phoneError.style.display = 'none';
+            phoneInput.style.borderColor = '#e0e0e0';
+        }
+        
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message status-' + type;
+            statusMessage.style.display = 'block';
+        }
+        
+        function hideStatus() {
+            statusMessage.style.display = 'none';
+        }
+        
+        function setLoading(isLoading) {
+            continueBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-block';
+            } else {
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validatePhone()) return;
+            
+            const phoneNumber = phoneInput.value;
+            setLoading(true);
+            hideStatus();
+            
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Check if user is registered
+            const isRegistered = registeredUsers.includes(phoneNumber);
+            
+            if (isRegistered) {
+                // Existing user - redirect to dating app
+                const userData = JSON.parse(localStorage.getItem(`user_${phoneNumber}`) || '{}');
+                showStatus(`Welcome back, ${userData.firstName}! Redirecting to Hinge...`, 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'hinge-mvp.html';
+                }, 1500);
+            } else {
+                // New user - go to registration
+                showStatus('New user detected. Redirecting to registration...', 'info');
+                
+                setTimeout(() => {
+                    showRegistrationScreen(phoneNumber);
+                }, 1500);
+            }
+            
+            setLoading(false);
+        });
+        
+        function showRegistrationScreen(phoneNumber) {
+            document.body.innerHTML = `
+                <div class="login-container">
+                    <div class="app-icon">📝</div>
+                    <h1 class="title">Complete Registration</h1>
+                    <p class="subtitle">Please provide your details</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <div style="padding: 16px; background: #f5f5f5; border-radius: 8px; color: #666;">
+                            ${phoneNumber}
+                        </div>
+                    </div>
+                    
+                    <form id="regForm">
+                        <div class="form-group">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" id="firstName" class="form-input" placeholder="Enter your first name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" id="lastName" class="form-input" placeholder="Enter your last name" required>
+                        </div>
+                        
+                        <button type="submit" class="continue-btn">Complete Registration</button>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('regForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                
+                if (firstName && lastName) {
+                    // Save user data
+                    const userData = { firstName, lastName };
+                    localStorage.setItem(`user_${phoneNumber}`, JSON.stringify(userData));
+                    registeredUsers.push(phoneNumber);
+                    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+                    
+                    // Redirect to Hinge MVP instead of home screen
+                    document.body.innerHTML = `
+                        <div class="login-container">
+                            <div class="app-icon">✅</div>
+                            <h1 class="title">Registration Complete!</h1>
+                            <p class="subtitle">Welcome to Hinge, ${firstName}!</p>
+                            <div class="status-message status-success">
+                                Redirecting to your dating app...
+                            </div>
+                        </div>
+                    `;
+                    
+                    setTimeout(() => {
+                        window.location.href = 'hinge-mvp.html';
+                    }, 2000);
+                }
+            });
+        }
+        
+        function logout() {
+            location.reload();
+        }
+        
+        // Demo instructions
+        setTimeout(() => {
+            showStatus('Demo ready! Try: 9876543210 (new user) or any previously used number', 'info');
+        }, 1000);
+    </script>
+</body>
+</html>

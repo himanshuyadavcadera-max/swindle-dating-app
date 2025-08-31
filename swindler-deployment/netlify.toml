@@ -1,0 +1,42 @@
+# Netlify configuration for Swindler Dating App
+
+[build]
+  # No build process needed - static files only
+  publish = "."
+
+[[redirects]]
+  # Redirect root to main app
+  from = "/"
+  to = "/hinge-mvp.html"
+  status = 200
+
+[[redirects]]
+  # Handle client-side routing
+  from = "/*"
+  to = "/hinge-mvp.html"
+  status = 200
+
+[build.environment]
+  # Node version (if needed for future builds)
+  NODE_VERSION = "18"
+
+[[headers]]
+  # Headers for PWA
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  # Cache static assets
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  # Cache icons and static files
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
