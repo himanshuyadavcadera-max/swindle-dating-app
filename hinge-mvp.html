@@ -1960,17 +1960,33 @@
         
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            // Create a default user - no login required
-            currentUser = {
-                phone: 'demo_user',
-                name: 'Demo User',
-                firstName: 'Demo',
-                lastName: 'User',
-                age: 25,
-                location: 'Demo City'
-            };
-            initializeApp();
+            checkUserLogin();
         });
+        
+        function checkUserLogin() {
+            // Get user from login demo
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            if (registeredUsers.length > 0) {
+                const lastUser = registeredUsers[registeredUsers.length - 1];
+                const userData = JSON.parse(localStorage.getItem(`user_${lastUser}`) || '{}');
+                if (userData.firstName) {
+                    currentUser = {
+                        phone: lastUser,
+                        name: `${userData.firstName} ${userData.lastName}`,
+                        ...userData
+                    };
+                    initializeApp();
+                } else {
+                    redirectToLogin();
+                }
+            } else {
+                redirectToLogin();
+            }
+        }
+        
+        function redirectToLogin() {
+            window.location.href = 'login-demo.html';
+        }
         
         function initializeApp() {
             loadUserData();
