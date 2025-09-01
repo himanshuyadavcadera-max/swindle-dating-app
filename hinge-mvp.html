@@ -275,6 +275,79 @@
             font-style: italic;
         }
         
+        .age-range-container {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .age-range-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .range-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .range-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .range-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .age-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .age-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e91e63;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(233, 30, 99, 0.3);
+        }
+        
+        .age-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e91e63;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(233, 30, 99, 0.3);
+        }
+        
+        .range-value {
+            font-weight: bold;
+            color: #e91e63;
+            font-size: 14px;
+            min-width: 24px;
+            text-align: center;
+        }
+        
         .btn {
             background: #e91e63;
             color: white;
@@ -1203,6 +1276,29 @@
                         </div>
                     </div>
                     <div class="preference-note">Select who you'd like to see and be shown to</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Age Preference</label>
+                    <div class="age-range-container">
+                        <div class="age-range-header">
+                            <span>Age range: </span>
+                            <span id="ageRangeDisplay">18 - 35</span>
+                        </div>
+                        <div class="range-inputs">
+                            <div class="range-group">
+                                <label class="range-label">Min Age</label>
+                                <input type="range" id="minAge" class="age-slider" min="18" max="80" value="18">
+                                <span id="minAgeValue" class="range-value">18</span>
+                            </div>
+                            <div class="range-group">
+                                <label class="range-label">Max Age</label>
+                                <input type="range" id="maxAge" class="age-slider" min="18" max="80" value="35">
+                                <span id="maxAgeValue" class="range-value">35</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preference-note">Choose the age range you're interested in dating</div>
                 </div>
                 
                 <div class="form-group">
@@ -2153,6 +2249,11 @@
                 if (currentUser.lookingFor.nonBinary) document.getElementById('lookingForNonBinary').checked = true;
                 if (currentUser.lookingFor.everyone) document.getElementById('lookingForEveryone').checked = true;
             }
+            if (currentUser.agePreference) {
+                document.getElementById('minAge').value = currentUser.agePreference.min || 18;
+                document.getElementById('maxAge').value = currentUser.agePreference.max || 35;
+                updateAgeDisplay();
+            }
             if (currentUser.location) {
                 document.getElementById('profileLocation').value = currentUser.location;
             }
@@ -2227,6 +2328,10 @@
                     women: document.getElementById('lookingForWomen').checked,
                     nonBinary: document.getElementById('lookingForNonBinary').checked,
                     everyone: document.getElementById('lookingForEveryone').checked
+                },
+                agePreference: {
+                    min: parseInt(document.getElementById('minAge').value),
+                    max: parseInt(document.getElementById('maxAge').value)
                 },
                 location: document.getElementById('profileLocation').value,
                 bio: document.getElementById('profileBio').value,
@@ -2558,6 +2663,38 @@
             }
         }
         
+        // Age preference functions
+        function updateAgeDisplay() {
+            const minAge = document.getElementById('minAge').value;
+            const maxAge = document.getElementById('maxAge').value;
+            document.getElementById('minAgeValue').textContent = minAge;
+            document.getElementById('maxAgeValue').textContent = maxAge;
+            document.getElementById('ageRangeDisplay').textContent = `${minAge} - ${maxAge}`;
+            
+            // Ensure min age is not greater than max age
+            if (parseInt(minAge) > parseInt(maxAge)) {
+                if (event.target && event.target.id === 'minAge') {
+                    document.getElementById('maxAge').value = minAge;
+                    document.getElementById('maxAgeValue').textContent = minAge;
+                } else {
+                    document.getElementById('minAge').value = maxAge;
+                    document.getElementById('minAgeValue').textContent = maxAge;
+                }
+                document.getElementById('ageRangeDisplay').textContent = `${document.getElementById('minAge').value} - ${document.getElementById('maxAge').value}`;
+            }
+        }
+        
+        function initializeAgeSliders() {
+            const minAgeSlider = document.getElementById('minAge');
+            const maxAgeSlider = document.getElementById('maxAge');
+            
+            if (minAgeSlider && maxAgeSlider) {
+                minAgeSlider.addEventListener('input', updateAgeDisplay);
+                maxAgeSlider.addEventListener('input', updateAgeDisplay);
+                updateAgeDisplay(); // Initialize display
+            }
+        }
+        
         // Helper function to handle search input with Enter key
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('locationSearch');
@@ -2615,6 +2752,9 @@
                     }
                 });
             }
+            
+            // Initialize age preference sliders
+            initializeAgeSliders();
         });
         
         function generateAddressFromCoords(lat, lng) {
