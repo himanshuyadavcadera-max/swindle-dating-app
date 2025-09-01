@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Swindle - Login</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -290,7 +294,35 @@
         </p>
     </div>
 
+    <!-- reCAPTCHA container (invisible) -->
+    <div id="recaptcha-container"></div>
+
     <script>
+        // Firebase Configuration
+        // TODO: Replace with your actual Firebase config from console.firebase.google.com
+        const firebaseConfig = {
+            apiKey: "your-api-key-here",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "your-app-id-here"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize reCAPTCHA verifier
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response) => {
+                console.log('reCAPTCHA solved');
+            },
+            'expired-callback': () => {
+                console.log('reCAPTCHA expired');
+            }
+        });
+        
         // Simulate user storage
         let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
         
@@ -304,7 +336,6 @@
         
         // OTP variables
         let currentPhoneNumber = '';
-        let generatedOTP = '';
         let resendTimer = null;
         let countdown = 30;
         
@@ -400,21 +431,65 @@
             }
         }
         
-        function generateOTP() {
-            return Math.floor(100000 + Math.random() * 900000).toString();
+        // Firebase OTP Functions
+        let confirmationResult = null;
+        
+        function sendFirebaseOTP(phoneNumber) {
+            const fullPhoneNumber = '+91' + phoneNumber; // Add country code
+            const appVerifier = window.recaptchaVerifier;
+            
+            return firebase.auth().signInWithPhoneNumber(fullPhoneNumber, appVerifier)
+                .then((result) => {
+                    confirmationResult = result;
+                    console.log('OTP sent successfully via Firebase');
+                    showStatus('OTP sent to your phone', 'success');
+                    return true;
+                })
+                .catch((error) => {
+                    console.error('Error sending OTP:', error);
+                    if (error.code === 'auth/too-many-requests') {
+                        showStatus('Too many requests. Please try again later.', 'error');
+                    } else if (error.code === 'auth/invalid-phone-number') {
+                        showStatus('Invalid phone number format', 'error');
+                    } else {
+                        showStatus('Failed to send OTP. Please try again.', 'error');
+                    }
+                    return false;
+                });
+        }
+        
+        function verifyFirebaseOTP(code) {
+            if (!confirmationResult) {
+                showStatus('Please request OTP first', 'error');
+                return Promise.resolve(false);
+            }
+            
+            return confirmationResult.confirm(code)
+                .then((result) => {
+                    const user = result.user;
+                    console.log('Phone verification successful:', user.uid);
+                    showStatus('Phone verified successfully!', 'success');
+                    return true;
+                })
+                .catch((error) => {
+                    console.error('Error verifying OTP:', error);
+                    if (error.code === 'auth/invalid-verification-code') {
+                        showStatus('Invalid OTP. Please check and try again.', 'error');
+                    } else if (error.code === 'auth/code-expired') {
+                        showStatus('OTP has expired. Please request a new one.', 'error');
+                    } else {
+                        showStatus('Verification failed. Please try again.', 'error');
+                    }
+                    return false;
+                });
         }
         
         function showOTPScreen(phoneNumber) {
             currentPhoneNumber = phoneNumber;
-            generatedOTP = generateOTP();
             
             document.getElementById('phoneScreen').style.display = 'none';
             document.getElementById('otpScreen').style.display = 'block';
             document.getElementById('sentToNumber').textContent = phoneNumber;
-            
-            // Show the OTP in console for demo purposes
-            console.log(`OTP for ${phoneNumber}: ${generatedOTP}`);
-            showStatus(`OTP sent to ${phoneNumber}: ${generatedOTP} (Demo mode)`, 'success');
             
             startResendTimer();
             
@@ -449,10 +524,14 @@
         }
         
         function resendOTP() {
-            generatedOTP = generateOTP();
-            console.log(`New OTP for ${currentPhoneNumber}: ${generatedOTP}`);
-            showStatus(`New OTP sent to ${currentPhoneNumber}: ${generatedOTP} (Demo mode)`, 'success');
-            startResendTimer();
+            setLoading(true, 'resend');
+            sendFirebaseOTP(currentPhoneNumber)
+                .then((success) => {
+                    if (success) {
+                        startResendTimer();
+                    }
+                    setLoading(false, 'resend');
+                });
         }
         
         // Phone form submission
@@ -465,11 +544,14 @@
             setLoading(true);
             hideStatus();
             
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Send OTP via Firebase
+            const success = await sendFirebaseOTP(phoneNumber);
             
             setLoading(false);
-            showOTPScreen(phoneNumber);
+            
+            if (success) {
+                showOTPScreen(phoneNumber);
+            }
         });
         
         // OTP form submission
@@ -483,10 +565,10 @@
                 setLoading(true, 'verify');
                 hideStatus();
                 
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Verify OTP via Firebase
+                const isValid = await verifyFirebaseOTP(enteredOTP);
                 
-                if (enteredOTP === generatedOTP) {
+                if (isValid) {
                     // OTP verified successfully
                     showStatus('OTP verified successfully!', 'success');
                     
@@ -512,7 +594,7 @@
                         }
                     }, 1000);
                 } else {
-                    // OTP verification failed
+                    // OTP verification failed - error already shown by verifyFirebaseOTP
                     showError('Invalid OTP. Please try again.', 'otp');
                     showStatus('Invalid OTP. Please check and try again.', 'error');
                 }
