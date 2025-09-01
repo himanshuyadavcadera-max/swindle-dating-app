@@ -5,15 +5,9 @@
   publish = "."
 
 [[redirects]]
-  # Handle client-side routing for the dating app
-  from = "/hinge-mvp.html"
-  to = "/hinge-mvp.html"
-  status = 200
-
-[[redirects]]
-  # Handle client-side routing for login demo
-  from = "/login-demo.html"
-  to = "/login-demo.html"
+  # Serve the dating app for any route
+  from = "/*"
+  to = "/index.html"
   status = 200
 
 [build.environment]
