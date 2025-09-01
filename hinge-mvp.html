@@ -393,6 +393,89 @@
             font-size: 14px;
         }
         
+        /* Profile Prompts Styles */
+        .prompts-section {
+            background: linear-gradient(135deg, rgba(233, 30, 99, 0.05), rgba(255, 107, 107, 0.05));
+            border: 2px solid rgba(233, 30, 99, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .prompts-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e91e63;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .prompts-description {
+            color: #666;
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .prompt-answer {
+            margin-top: 8px;
+            min-height: 80px;
+            resize: vertical;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+        
+        .prompt-answer:focus {
+            border-color: #e91e63;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+        }
+        
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .char-counter.warning {
+            color: #ff9800;
+        }
+        
+        .char-counter.danger {
+            color: #f44336;
+        }
+        
+        /* Profile Prompts Display */
+        .profile-prompts {
+            margin-top: 16px;
+        }
+        
+        .prompt-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #e91e63;
+        }
+        
+        .prompt-question {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e91e63;
+            margin-bottom: 6px;
+        }
+        
+        .prompt-answer {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
         /* Forms */
         .form-group {
             margin-bottom: 20px;
@@ -1512,6 +1595,57 @@
                     <div id="locationStatus" class="location-status"></div>
                 </div>
                 
+                <!-- Personal Prompts -->
+                <div class="prompts-section">
+                    <h3 class="prompts-title">Tell us about yourself <span style="color: #e91e63;">*</span></h3>
+                    <p class="prompts-description">Answer these 3 questions to help others get to know you better!</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Personal Question <span style="color: #e91e63;">*</span></label>
+                        <select id="personalPrompt" class="form-input" required onchange="updatePromptPlaceholder('personal')">
+                            <option value="">Choose a question...</option>
+                            <option value="My biggest dream is...">My biggest dream is...</option>
+                            <option value="The best advice I've ever received is...">The best advice I've ever received is...</option>
+                            <option value="Something I'm passionate about is...">Something I'm passionate about is...</option>
+                            <option value="My biggest fear is...">My biggest fear is...</option>
+                            <option value="If I could change one thing about the world...">If I could change one thing about the world...</option>
+                            <option value="My proudest moment was...">My proudest moment was...</option>
+                        </select>
+                        <textarea id="personalAnswer" class="form-textarea prompt-answer" placeholder="Your answer..." required maxlength="150"></textarea>
+                        <div class="char-counter"><span id="personalCount">0</span>/150</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Interest Question <span style="color: #e91e63;">*</span></label>
+                        <select id="interestPrompt" class="form-input" required onchange="updatePromptPlaceholder('interest')">
+                            <option value="">Choose a question...</option>
+                            <option value="My favorite way to spend a weekend is...">My favorite way to spend a weekend is...</option>
+                            <option value="The last book I couldn't put down was...">The last book I couldn't put down was...</option>
+                            <option value="My go-to karaoke song is...">My go-to karaoke song is...</option>
+                            <option value="The best meal I've ever had was...">The best meal I've ever had was...</option>
+                            <option value="My guilty pleasure is...">My guilty pleasure is...</option>
+                            <option value="I could talk for hours about...">I could talk for hours about...</option>
+                        </select>
+                        <textarea id="interestAnswer" class="form-textarea prompt-answer" placeholder="Your answer..." required maxlength="150"></textarea>
+                        <div class="char-counter"><span id="interestCount">0</span>/150</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Hobby Question <span style="color: #e91e63;">*</span></label>
+                        <select id="hobbyPrompt" class="form-input" required onchange="updatePromptPlaceholder('hobby')">
+                            <option value="">Choose a question...</option>
+                            <option value="A hobby I'd love to try is...">A hobby I'd love to try is...</option>
+                            <option value="When I have free time, I love to...">When I have free time, I love to...</option>
+                            <option value="The most adventurous thing I've done is...">The most adventurous thing I've done is...</option>
+                            <option value="My hidden talent is...">My hidden talent is...</option>
+                            <option value="If I could learn any skill instantly...">If I could learn any skill instantly...</option>
+                            <option value="The activity that makes me lose track of time is...">The activity that makes me lose track of time is...</option>
+                        </select>
+                        <textarea id="hobbyAnswer" class="form-textarea prompt-answer" placeholder="Your answer..." required maxlength="150"></textarea>
+                        <div class="char-counter"><span id="hobbyCount">0</span>/150</div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label class="form-label">Photos <span style="color: #e91e63;">*</span></label>
                     <div class="photo-requirements" id="photoRequirements">
@@ -1989,6 +2123,14 @@
                 return false;
             }
             
+            // Check if all 3 prompts are answered
+            if (!currentUser.prompts || 
+                !currentUser.prompts.personal || !currentUser.prompts.personal.question || !currentUser.prompts.personal.answer ||
+                !currentUser.prompts.interest || !currentUser.prompts.interest.question || !currentUser.prompts.interest.answer ||
+                !currentUser.prompts.hobby || !currentUser.prompts.hobby.question || !currentUser.prompts.hobby.answer) {
+                return false;
+            }
+            
             return true;
         }
         
@@ -2039,6 +2181,23 @@
                         <div class="profile-info">
                             <div class="profile-name">${profile.name}, ${profile.age}</div>
                             <div class="profile-details">📍 ${profile.location}</div>
+                            
+                            ${profile.prompts ? `
+                                <div class="profile-prompts">
+                                    <div class="prompt-item">
+                                        <div class="prompt-question">${profile.prompts.personal.question}</div>
+                                        <div class="prompt-answer">${profile.prompts.personal.answer}</div>
+                                    </div>
+                                    <div class="prompt-item">
+                                        <div class="prompt-question">${profile.prompts.interest.question}</div>
+                                        <div class="prompt-answer">${profile.prompts.interest.answer}</div>
+                                    </div>
+                                    <div class="prompt-item">
+                                        <div class="prompt-question">${profile.prompts.hobby.question}</div>
+                                        <div class="prompt-answer">${profile.prompts.hobby.answer}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="action-buttons">
                             <button class="action-btn pass-btn" onclick="passProfile()">✖️</button>
@@ -2547,6 +2706,25 @@
                 document.getElementById('profileLocation').value = currentUser.location;
             }
             
+            // Load saved prompts
+            if (currentUser.prompts) {
+                if (currentUser.prompts.personal) {
+                    document.getElementById('personalPrompt').value = currentUser.prompts.personal.question;
+                    document.getElementById('personalAnswer').value = currentUser.prompts.personal.answer;
+                    updatePromptPlaceholder('personal');
+                }
+                if (currentUser.prompts.interest) {
+                    document.getElementById('interestPrompt').value = currentUser.prompts.interest.question;
+                    document.getElementById('interestAnswer').value = currentUser.prompts.interest.answer;
+                    updatePromptPlaceholder('interest');
+                }
+                if (currentUser.prompts.hobby) {
+                    document.getElementById('hobbyPrompt').value = currentUser.prompts.hobby.question;
+                    document.getElementById('hobbyAnswer').value = currentUser.prompts.hobby.answer;
+                    updatePromptPlaceholder('hobby');
+                }
+            }
+            
             // Load saved photos
             if (currentUser.photos && currentUser.photos.length > 0) {
                 userPhotos = [...currentUser.photos];
@@ -2601,6 +2779,24 @@
                 return;
             }
             
+            // Validate prompts
+            const personalPrompt = document.getElementById('personalPrompt').value;
+            const personalAnswer = document.getElementById('personalAnswer').value.trim();
+            const interestPrompt = document.getElementById('interestPrompt').value;
+            const interestAnswer = document.getElementById('interestAnswer').value.trim();
+            const hobbyPrompt = document.getElementById('hobbyPrompt').value;
+            const hobbyAnswer = document.getElementById('hobbyAnswer').value.trim();
+            
+            if (!personalPrompt || !personalAnswer || !interestPrompt || !interestAnswer || !hobbyPrompt || !hobbyAnswer) {
+                document.getElementById('profileStatus').innerHTML = `
+                    <div class="status-message status-error">Please complete all 3 personal prompts before saving your profile.</div>
+                `;
+                setTimeout(() => {
+                    document.getElementById('profileStatus').innerHTML = '';
+                }, 3000);
+                return;
+            }
+            
             const profileData = {
                 name: document.getElementById('profileName').value,
                 age: parseInt(document.getElementById('profileAge').value),
@@ -2617,6 +2813,20 @@
                     max: parseInt(document.getElementById('maxAge').value)
                 },
                 location: document.getElementById('profileLocation').value,
+                prompts: {
+                    personal: {
+                        question: personalPrompt,
+                        answer: personalAnswer
+                    },
+                    interest: {
+                        question: interestPrompt,
+                        answer: interestAnswer
+                    },
+                    hobby: {
+                        question: hobbyPrompt,
+                        answer: hobbyAnswer
+                    }
+                },
                 photos: userPhotos.filter(photo => photo !== null && photo !== undefined) // Save only filled photos
             };
             
@@ -3252,6 +3462,43 @@
                 }, 3000);
             }
         }
+        
+        // Prompt Functions
+        function updatePromptPlaceholder(type) {
+            const select = document.getElementById(type + 'Prompt');
+            const textarea = document.getElementById(type + 'Answer');
+            
+            if (select.value) {
+                textarea.placeholder = 'Share your answer here...';
+                textarea.focus();
+            } else {
+                textarea.placeholder = 'Choose a question first...';
+            }
+        }
+        
+        // Character counting for prompts
+        document.addEventListener('DOMContentLoaded', function() {
+            ['personal', 'interest', 'hobby'].forEach(type => {
+                const textarea = document.getElementById(type + 'Answer');
+                const counter = document.getElementById(type + 'Count');
+                
+                if (textarea && counter) {
+                    textarea.addEventListener('input', function() {
+                        const length = this.value.length;
+                        counter.textContent = length;
+                        
+                        const counterEl = counter.parentElement;
+                        counterEl.classList.remove('warning', 'danger');
+                        
+                        if (length > 120) {
+                            counterEl.classList.add('danger');
+                        } else if (length > 100) {
+                            counterEl.classList.add('warning');
+                        }
+                    });
+                }
+            });
+        });
     </script>
 </body>
 </html>
