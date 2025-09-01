@@ -165,6 +165,73 @@
             color: white;
         }
         
+        /* Profile Completion Enforcement */
+        .profile-card.blurred {
+            position: relative;
+        }
+        
+        .profile-card.blurred .profile-image,
+        .profile-card.blurred .profile-info {
+            filter: blur(10px);
+            pointer-events: none;
+        }
+        
+        .profile-completion-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .completion-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        .completion-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        
+        .completion-message {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            max-width: 280px;
+        }
+        
+        .complete-profile-btn {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        }
+        
+        .complete-profile-btn:hover {
+            background: #c2185b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(233, 30, 99, 0.4);
+        }
+        
         .message-btn {
             background: #2196F3;
             color: white;
@@ -1731,6 +1798,34 @@
             currentProfileIndex = 0;
         }
         
+        // Check if user profile is complete
+        function isProfileComplete() {
+            if (!currentUser.name || !currentUser.age || !currentUser.gender || 
+                !currentUser.sexuality || !currentUser.location || !currentUser.bio) {
+                return false;
+            }
+            
+            // Check if looking for preferences are set
+            if (!currentUser.lookingFor || 
+                (!currentUser.lookingFor.men && !currentUser.lookingFor.women && 
+                 !currentUser.lookingFor.nonBinary && !currentUser.lookingFor.everyone)) {
+                return false;
+            }
+            
+            // Check if age preferences are set
+            if (!currentUser.agePreference || !currentUser.agePreference.min || !currentUser.agePreference.max) {
+                return false;
+            }
+            
+            // Check if at least 3 photos are uploaded
+            const photoCount = (currentUser.photos || []).filter(photo => photo && photo.trim() !== '').length;
+            if (photoCount < 3) {
+                return false;
+            }
+            
+            return true;
+        }
+        
         function showCurrentProfile() {
             const stackElement = document.getElementById('profileStack');
             const emptyElement = document.getElementById('discoverEmpty');
@@ -1743,24 +1838,53 @@
             
             emptyElement.style.display = 'none';
             const profile = userProfiles[currentProfileIndex];
+            const isComplete = isProfileComplete();
             
-            stackElement.innerHTML = `
-                <div class="profile-card" id="currentCard">
-                    <div class="profile-image">
-                        ${profile.emoji}
+            if (!isComplete) {
+                // Show blurred profile with completion overlay
+                stackElement.innerHTML = `
+                    <div class="profile-card blurred" id="currentCard">
+                        <div class="profile-image">
+                            ${profile.emoji}
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">${profile.name}, ${profile.age}</div>
+                            <div class="profile-details">📍 ${profile.location}</div>
+                            <div class="profile-bio">${profile.bio}</div>
+                            <div class="profile-details"><strong>Interests:</strong> ${profile.interests}</div>
+                        </div>
+                        <div class="profile-completion-overlay">
+                            <div class="completion-icon">🔒</div>
+                            <div class="completion-title">Complete Your Profile First</div>
+                            <div class="completion-message">
+                                Finish setting up your profile to start discovering amazing people!
+                            </div>
+                            <button class="complete-profile-btn" onclick="showScreen('profile')">
+                                Complete Profile
+                            </button>
+                        </div>
                     </div>
-                    <div class="profile-info">
-                        <div class="profile-name">${profile.name}, ${profile.age}</div>
-                        <div class="profile-details">📍 ${profile.location}</div>
-                        <div class="profile-bio">${profile.bio}</div>
-                        <div class="profile-details"><strong>Interests:</strong> ${profile.interests}</div>
+                `;
+            } else {
+                // Show normal profile
+                stackElement.innerHTML = `
+                    <div class="profile-card" id="currentCard">
+                        <div class="profile-image">
+                            ${profile.emoji}
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">${profile.name}, ${profile.age}</div>
+                            <div class="profile-details">📍 ${profile.location}</div>
+                            <div class="profile-bio">${profile.bio}</div>
+                            <div class="profile-details"><strong>Interests:</strong> ${profile.interests}</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn pass-btn" onclick="passProfile()">✖️</button>
+                            <button class="action-btn like-btn" onclick="showLikeOptions()">❤️</button>
+                        </div>
                     </div>
-                    <div class="action-buttons">
-                        <button class="action-btn pass-btn" onclick="passProfile()">✖️</button>
-                        <button class="action-btn like-btn" onclick="showLikeOptions()">❤️</button>
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
         
         function passProfile() {
@@ -2348,8 +2472,13 @@
             localStorage.setItem(`dating_profile_${currentUser.phone}`, JSON.stringify(profileData));
             
             document.getElementById('profileStatus').innerHTML = `
-                <div class="status-message status-success">Profile saved successfully!</div>
+                <div class="status-message status-success">Profile saved successfully! You can now discover other users.</div>
             `;
+            
+            // Refresh discover screen to remove blur if profile is now complete
+            if (isProfileComplete()) {
+                showCurrentProfile(); // Refresh current profile display
+            }
             
             setTimeout(() => {
                 document.getElementById('profileStatus').innerHTML = '';
