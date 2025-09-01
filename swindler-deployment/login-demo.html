@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swindle - Login</title>
+    <title>Swindle - Login with Auth0</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -24,11 +24,321 @@
         .login-container {
             background: white;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             width: 100%;
             max-width: 400px;
+            text-align: center;
         }
+        
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .auth0-login-container {
+            margin: 20px 0;
+        }
+
+        .phone-login-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .phone-login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .demo-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #eee;
+        }
+
+        .demo-btn {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #dee2e6;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .status-message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            margin: 16px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ff6b6b;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer-text {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="app-icon">💕</div>
+        <h1 class="title">Welcome to Swindle</h1>
+        <p class="subtitle">Sign in with your phone number</p>
+        
+        <div class="auth0-login-container">
+            <button id="phoneLoginBtn" class="phone-login-btn">
+                📱 Login with Phone Number
+            </button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Setting up secure authentication...</p>
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+
+        <div class="demo-section">
+            <p style="font-size: 12px; color: #999; margin-bottom: 12px;">For testing purposes:</p>
+            <button id="demoLoginBtn" class="demo-btn">
+                🎯 Demo Login (Skip Auth)
+            </button>
+        </div>
+
+        <p class="footer-text">
+            Secure authentication powered by Auth0<br>
+            Your data is protected with enterprise-grade security
+        </p>
+    </div>
+
+    <!-- Auth0 SDK -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+    
+    <script>
+        let auth0Client;
+        
+        // Auth0 Configuration - Replace with your actual domain and client ID
+        const auth0Config = {
+            domain: 'dev-ih7iq83s64ogb00i.us.auth0.com', // Your Auth0 domain
+            clientId: 'YOUR_CLIENT_ID', // You need to get this from Auth0 dashboard
+            authorizationParams: {
+                redirect_uri: window.location.origin + '/login-demo.html',
+                connection: 'sms' // Enable SMS connection
+            }
+        };
+
+        // Initialize Auth0
+        async function initAuth0() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                
+                auth0Client = await auth0.createAuth0Client(auth0Config);
+                
+                // Check if user is already authenticated
+                const isAuthenticated = await auth0Client.isAuthenticated();
+                
+                if (isAuthenticated) {
+                    const user = await auth0Client.getUser();
+                    handleSuccessfulAuth(user);
+                    return;
+                }
+
+                // Check for authentication result (callback)
+                const query = window.location.search;
+                if (query.includes('code=') && query.includes('state=')) {
+                    try {
+                        await auth0Client.handleRedirectCallback();
+                        const user = await auth0Client.getUser();
+                        handleSuccessfulAuth(user);
+                        return;
+                    } catch (error) {
+                        showMessage('Authentication failed: ' + error.message, 'error');
+                    }
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Auth0 initialization error:', error);
+                showMessage('Failed to initialize authentication. Please try demo login.', 'error');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Phone login with Auth0
+        async function loginWithPhone() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                showMessage('Redirecting to secure phone verification...', 'success');
+                
+                await auth0Client.loginWithRedirect({
+                    authorizationParams: {
+                        connection: 'sms',
+                        login_hint: 'phone_number'
+                    }
+                });
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('Login failed: ' + error.message, 'error');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Handle successful authentication
+        function handleSuccessfulAuth(user) {
+            console.log('Authenticated user:', user);
+            
+            // Extract user info
+            const phoneNumber = user.phone_number || user.sub;
+            const name = user.name || 'User';
+            
+            // Save user data locally (compatible with existing app)
+            const userData = {
+                firstName: name.split(' ')[0] || 'Demo',
+                lastName: name.split(' ')[1] || 'User',
+                phone: phoneNumber,
+                email: user.email
+            };
+            
+            localStorage.setItem(`user_${phoneNumber}`, JSON.stringify(userData));
+            
+            let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            if (!registeredUsers.includes(phoneNumber)) {
+                registeredUsers.push(phoneNumber);
+                localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            }
+            
+            // Show success message
+            document.body.innerHTML = `
+                <div class="login-container">
+                    <div class="app-icon">✅</div>
+                    <h1 class="title">Welcome to Swindle!</h1>
+                    <p class="subtitle">Authentication successful</p>
+                    <div class="status-message status-success" style="display: block;">
+                        Redirecting to your dating app...
+                    </div>
+                </div>
+            `;
+            
+            // Redirect to dating app
+            setTimeout(() => {
+                window.location.href = 'hinge-mvp.html';
+            }, 2000);
+        }
+
+        // Demo login (fallback)
+        function demoLogin() {
+            const demoUser = {
+                firstName: 'Demo',
+                lastName: 'User',
+                phone: 'demo_user_' + Date.now(),
+                email: 'demo@swindle.app'
+            };
+            
+            localStorage.setItem(`user_${demoUser.phone}`, JSON.stringify(demoUser));
+            
+            let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            registeredUsers.push(demoUser.phone);
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            
+            showMessage('Demo login successful! Redirecting...', 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'hinge-mvp.html';
+            }, 1500);
+        }
+
+        // Show status messages
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth0();
+            
+            document.getElementById('phoneLoginBtn').addEventListener('click', loginWithPhone);
+            document.getElementById('demoLoginBtn').addEventListener('click', demoLogin);
+        });
+    </script>
+</body>
+</html>
         
         .app-icon {
             width: 80px;
@@ -134,6 +444,12 @@
             border: 1px solid #c8e6c9;
         }
         
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
         .status-info {
             background: #e3f2fd;
             color: #1565c0;
@@ -153,6 +469,68 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* OTP Screen Styles */
+        .back-btn {
+            color: #2196F3;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+        
+        .otp-input {
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 4px;
+            font-weight: bold;
+        }
+        
+        .otp-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .resend-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .resend-btn {
+            background: none;
+            border: none;
+            color: #2196F3;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: underline;
+        }
+        
+        .resend-btn:hover {
+            color: #1976D2;
+        }
+        
+        #resendTimer {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .otp-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -164,24 +542,58 @@
         
         <div id="statusMessage" class="status-message"></div>
         
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="phoneNumber" class="form-label">Mobile Number</label>
-                <input 
-                    type="tel" 
-                    id="phoneNumber" 
-                    class="form-input" 
-                    placeholder="Enter your 10-digit mobile number"
-                    maxlength="10"
-                >
-                <div id="phoneError" class="error-message"></div>
-            </div>
-            
-            <button type="submit" id="continueBtn" class="continue-btn">
-                <span id="btnText">Continue</span>
-                <span id="btnLoading" class="loading" style="display: none;"></span>
-            </button>
-        </form>
+        <!-- Phone Number Screen -->
+        <div id="phoneScreen">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="phoneNumber" class="form-label">Mobile Number</label>
+                    <input 
+                        type="tel" 
+                        id="phoneNumber" 
+                        class="form-input" 
+                        placeholder="Enter your 10-digit mobile number"
+                        maxlength="10"
+                    >
+                    <div id="phoneError" class="error-message"></div>
+                </div>
+                
+                <button type="submit" id="continueBtn" class="continue-btn">
+                    <span id="btnText">Send OTP</span>
+                    <span id="btnLoading" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+        </div>
+        
+        <!-- OTP Verification Screen -->
+        <div id="otpScreen" style="display: none;">
+            <div class="back-btn" onclick="showPhoneScreen()">← Back</div>
+            <form id="otpForm">
+                <div class="form-group">
+                    <label for="otpCode" class="form-label">Enter OTP</label>
+                    <p class="otp-info">We've sent a 6-digit code to <strong id="sentToNumber"></strong></p>
+                    <input 
+                        type="text" 
+                        id="otpCode" 
+                        class="form-input otp-input" 
+                        placeholder="Enter 6-digit OTP"
+                        maxlength="6"
+                    >
+                    <div id="otpError" class="error-message"></div>
+                </div>
+                
+                <div class="resend-section">
+                    <span id="resendTimer">Resend OTP in <span id="countdown">30</span>s</span>
+                    <button type="button" id="resendBtn" class="resend-btn" onclick="resendOTP()" style="display: none;">
+                        Resend OTP
+                    </button>
+                </div>
+                
+                <button type="submit" id="verifyBtn" class="continue-btn">
+                    <span id="verifyText">Verify OTP</span>
+                    <span id="verifyLoading" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+        </div>
         
         <p class="terms">
             By continuing, you agree to our Terms of Service and Privacy Policy
@@ -200,6 +612,12 @@
         const btnLoading = document.getElementById('btnLoading');
         const statusMessage = document.getElementById('statusMessage');
         
+        // OTP variables
+        let currentPhoneNumber = '';
+        let generatedOTP = '';
+        let resendTimer = null;
+        let countdown = 30;
+        
         // Phone number validation
         phoneInput.addEventListener('input', function() {
             this.value = this.value.replace(/[^0-9]/g, '');
@@ -209,26 +627,51 @@
         function validatePhone() {
             const phone = phoneInput.value;
             if (phone.length === 0) {
-                showError('Please enter your mobile number');
+                showError('Please enter your mobile number', 'phone');
                 return false;
             }
             if (phone.length !== 10) {
-                showError('Mobile number must be 10 digits');
+                showError('Mobile number must be 10 digits', 'phone');
                 return false;
             }
-            hideError();
+            hideError('phone');
             return true;
         }
         
-        function showError(message) {
-            phoneError.textContent = message;
-            phoneError.style.display = 'block';
-            phoneInput.style.borderColor = '#f44336';
+        function validateOTP() {
+            const otp = document.getElementById('otpCode').value;
+            if (otp.length === 0) {
+                showError('Please enter the OTP', 'otp');
+                return false;
+            }
+            if (otp.length !== 6) {
+                showError('OTP must be 6 digits', 'otp');
+                return false;
+            }
+            hideError('otp');
+            return true;
         }
         
-        function hideError() {
-            phoneError.style.display = 'none';
-            phoneInput.style.borderColor = '#e0e0e0';
+        function showError(message, type) {
+            if (type === 'phone') {
+                phoneError.textContent = message;
+                phoneError.style.display = 'block';
+                phoneInput.style.borderColor = '#f44336';
+            } else if (type === 'otp') {
+                document.getElementById('otpError').textContent = message;
+                document.getElementById('otpError').style.display = 'block';
+                document.getElementById('otpCode').style.borderColor = '#f44336';
+            }
+        }
+        
+        function hideError(type) {
+            if (type === 'phone') {
+                phoneError.style.display = 'none';
+                phoneInput.style.borderColor = '#e0e0e0';
+            } else if (type === 'otp') {
+                document.getElementById('otpError').style.display = 'none';
+                document.getElementById('otpCode').style.borderColor = '#e0e0e0';
+            }
         }
         
         function showStatus(message, type) {
@@ -241,17 +684,88 @@
             statusMessage.style.display = 'none';
         }
         
-        function setLoading(isLoading) {
-            continueBtn.disabled = isLoading;
-            if (isLoading) {
-                btnText.style.display = 'none';
-                btnLoading.style.display = 'inline-block';
-            } else {
-                btnText.style.display = 'inline';
-                btnLoading.style.display = 'none';
+        function setLoading(isLoading, type = 'continue') {
+            if (type === 'continue') {
+                continueBtn.disabled = isLoading;
+                if (isLoading) {
+                    btnText.style.display = 'none';
+                    btnLoading.style.display = 'inline-block';
+                } else {
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            } else if (type === 'verify') {
+                const verifyBtn = document.getElementById('verifyBtn');
+                const verifyText = document.getElementById('verifyText');
+                const verifyLoading = document.getElementById('verifyLoading');
+                
+                verifyBtn.disabled = isLoading;
+                if (isLoading) {
+                    verifyText.style.display = 'none';
+                    verifyLoading.style.display = 'inline-block';
+                } else {
+                    verifyText.style.display = 'inline';
+                    verifyLoading.style.display = 'none';
+                }
             }
         }
         
+        function generateOTP() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+        
+        function showOTPScreen(phoneNumber) {
+            currentPhoneNumber = phoneNumber;
+            generatedOTP = generateOTP();
+            
+            document.getElementById('phoneScreen').style.display = 'none';
+            document.getElementById('otpScreen').style.display = 'block';
+            document.getElementById('sentToNumber').textContent = phoneNumber;
+            
+            // Show the OTP in console for demo purposes
+            console.log(`OTP for ${phoneNumber}: ${generatedOTP}`);
+            showStatus(`OTP sent to ${phoneNumber}: ${generatedOTP} (Demo mode)`, 'success');
+            
+            startResendTimer();
+            
+            // Focus on OTP input
+            setTimeout(() => {
+                document.getElementById('otpCode').focus();
+            }, 100);
+        }
+        
+        function showPhoneScreen() {
+            document.getElementById('otpScreen').style.display = 'none';
+            document.getElementById('phoneScreen').style.display = 'block';
+            hideStatus();
+            clearInterval(resendTimer);
+        }
+        
+        function startResendTimer() {
+            countdown = 30;
+            document.getElementById('resendTimer').style.display = 'inline';
+            document.getElementById('resendBtn').style.display = 'none';
+            
+            resendTimer = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(resendTimer);
+                    document.getElementById('resendTimer').style.display = 'none';
+                    document.getElementById('resendBtn').style.display = 'inline';
+                }
+            }, 1000);
+        }
+        
+        function resendOTP() {
+            generatedOTP = generateOTP();
+            console.log(`New OTP for ${currentPhoneNumber}: ${generatedOTP}`);
+            showStatus(`New OTP sent to ${currentPhoneNumber}: ${generatedOTP} (Demo mode)`, 'success');
+            startResendTimer();
+        }
+        
+        // Phone form submission
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -264,27 +778,68 @@
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 1500));
             
-            // Check if user is registered
-            const isRegistered = registeredUsers.includes(phoneNumber);
-            
-            if (isRegistered) {
-                // Existing user - redirect to dating app
-                const userData = JSON.parse(localStorage.getItem(`user_${phoneNumber}`) || '{}');
-                showStatus(`Welcome back, ${userData.firstName}! Redirecting to Hinge...`, 'success');
-                
-                setTimeout(() => {
-                    window.location.href = 'hinge-mvp.html';
-                }, 1500);
-            } else {
-                // New user - go to registration
-                showStatus('New user detected. Redirecting to registration...', 'info');
-                
-                setTimeout(() => {
-                    showRegistrationScreen(phoneNumber);
-                }, 1500);
-            }
-            
             setLoading(false);
+            showOTPScreen(phoneNumber);
+        });
+        
+        // OTP form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('otpForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!validateOTP()) return;
+                
+                const enteredOTP = document.getElementById('otpCode').value;
+                setLoading(true, 'verify');
+                hideStatus();
+                
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                if (enteredOTP === generatedOTP) {
+                    // OTP verified successfully
+                    showStatus('OTP verified successfully!', 'success');
+                    
+                    // Check if user is registered
+                    const isRegistered = registeredUsers.includes(currentPhoneNumber);
+                    
+                    setTimeout(() => {
+                        if (isRegistered) {
+                            // Existing user - redirect to dating app
+                            const userData = JSON.parse(localStorage.getItem(`user_${currentPhoneNumber}`) || '{}');
+                            showStatus(`Welcome back, ${userData.firstName}! Redirecting to Swindle...`, 'success');
+                            
+                            setTimeout(() => {
+                                window.location.href = 'hinge-mvp.html';
+                            }, 1500);
+                        } else {
+                            // New user - go to registration
+                            showStatus('New user detected. Redirecting to registration...', 'info');
+                            
+                            setTimeout(() => {
+                                showRegistrationScreen(currentPhoneNumber);
+                            }, 1500);
+                        }
+                    }, 1000);
+                } else {
+                    // OTP verification failed
+                    showError('Invalid OTP. Please try again.', 'otp');
+                    showStatus('Invalid OTP. Please check and try again.', 'error');
+                }
+                
+                setLoading(false, 'verify');
+            });
+        });
+        
+        // OTP input formatting
+        document.addEventListener('DOMContentLoaded', function() {
+            const otpInput = document.getElementById('otpCode');
+            if (otpInput) {
+                otpInput.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    validateOTP();
+                });
+            }
         });
         
         function showRegistrationScreen(phoneNumber) {

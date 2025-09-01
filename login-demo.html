@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swindle - Login</title>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <title>Swindle - Login with Auth0</title>
     <style>
         * {
             margin: 0;
@@ -17,7 +13,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -28,11 +24,321 @@
         .login-container {
             background: white;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             width: 100%;
             max-width: 400px;
+            text-align: center;
         }
+        
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .auth0-login-container {
+            margin: 20px 0;
+        }
+
+        .phone-login-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .phone-login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .demo-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #eee;
+        }
+
+        .demo-btn {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #dee2e6;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .status-message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            margin: 16px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ff6b6b;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer-text {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="app-icon">💕</div>
+        <h1 class="title">Welcome to Swindle</h1>
+        <p class="subtitle">Sign in with your phone number</p>
+        
+        <div class="auth0-login-container">
+            <button id="phoneLoginBtn" class="phone-login-btn">
+                📱 Login with Phone Number
+            </button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Setting up secure authentication...</p>
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+
+        <div class="demo-section">
+            <p style="font-size: 12px; color: #999; margin-bottom: 12px;">For testing purposes:</p>
+            <button id="demoLoginBtn" class="demo-btn">
+                🎯 Demo Login (Skip Auth)
+            </button>
+        </div>
+
+        <p class="footer-text">
+            Secure authentication powered by Auth0<br>
+            Your data is protected with enterprise-grade security
+        </p>
+    </div>
+
+    <!-- Auth0 SDK -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+    
+    <script>
+        let auth0Client;
+        
+        // Auth0 Configuration - Replace with your actual domain and client ID
+        const auth0Config = {
+            domain: 'dev-ih7iq83s64ogb00i.us.auth0.com', // Your Auth0 domain
+            clientId: 'YOUR_CLIENT_ID', // You need to get this from Auth0 dashboard
+            authorizationParams: {
+                redirect_uri: window.location.origin + '/login-demo.html',
+                connection: 'sms' // Enable SMS connection
+            }
+        };
+
+        // Initialize Auth0
+        async function initAuth0() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                
+                auth0Client = await auth0.createAuth0Client(auth0Config);
+                
+                // Check if user is already authenticated
+                const isAuthenticated = await auth0Client.isAuthenticated();
+                
+                if (isAuthenticated) {
+                    const user = await auth0Client.getUser();
+                    handleSuccessfulAuth(user);
+                    return;
+                }
+
+                // Check for authentication result (callback)
+                const query = window.location.search;
+                if (query.includes('code=') && query.includes('state=')) {
+                    try {
+                        await auth0Client.handleRedirectCallback();
+                        const user = await auth0Client.getUser();
+                        handleSuccessfulAuth(user);
+                        return;
+                    } catch (error) {
+                        showMessage('Authentication failed: ' + error.message, 'error');
+                    }
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Auth0 initialization error:', error);
+                showMessage('Failed to initialize authentication. Please try demo login.', 'error');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Phone login with Auth0
+        async function loginWithPhone() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                showMessage('Redirecting to secure phone verification...', 'success');
+                
+                await auth0Client.loginWithRedirect({
+                    authorizationParams: {
+                        connection: 'sms',
+                        login_hint: 'phone_number'
+                    }
+                });
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('Login failed: ' + error.message, 'error');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Handle successful authentication
+        function handleSuccessfulAuth(user) {
+            console.log('Authenticated user:', user);
+            
+            // Extract user info
+            const phoneNumber = user.phone_number || user.sub;
+            const name = user.name || 'User';
+            
+            // Save user data locally (compatible with existing app)
+            const userData = {
+                firstName: name.split(' ')[0] || 'Demo',
+                lastName: name.split(' ')[1] || 'User',
+                phone: phoneNumber,
+                email: user.email
+            };
+            
+            localStorage.setItem(`user_${phoneNumber}`, JSON.stringify(userData));
+            
+            let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            if (!registeredUsers.includes(phoneNumber)) {
+                registeredUsers.push(phoneNumber);
+                localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            }
+            
+            // Show success message
+            document.body.innerHTML = `
+                <div class="login-container">
+                    <div class="app-icon">✅</div>
+                    <h1 class="title">Welcome to Swindle!</h1>
+                    <p class="subtitle">Authentication successful</p>
+                    <div class="status-message status-success" style="display: block;">
+                        Redirecting to your dating app...
+                    </div>
+                </div>
+            `;
+            
+            // Redirect to dating app
+            setTimeout(() => {
+                window.location.href = 'hinge-mvp.html';
+            }, 2000);
+        }
+
+        // Demo login (fallback)
+        function demoLogin() {
+            const demoUser = {
+                firstName: 'Demo',
+                lastName: 'User',
+                phone: 'demo_user_' + Date.now(),
+                email: 'demo@swindle.app'
+            };
+            
+            localStorage.setItem(`user_${demoUser.phone}`, JSON.stringify(demoUser));
+            
+            let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+            registeredUsers.push(demoUser.phone);
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            
+            showMessage('Demo login successful! Redirecting...', 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'hinge-mvp.html';
+            }, 1500);
+        }
+
+        // Show status messages
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth0();
+            
+            document.getElementById('phoneLoginBtn').addEventListener('click', loginWithPhone);
+            document.getElementById('demoLoginBtn').addEventListener('click', demoLogin);
+        });
+    </script>
+</body>
+</html>
         
         .app-icon {
             width: 80px;
@@ -294,35 +600,7 @@
         </p>
     </div>
 
-    <!-- reCAPTCHA container (invisible) -->
-    <div id="recaptcha-container"></div>
-
     <script>
-        // Firebase Configuration
-        // TODO: Replace with your actual Firebase config from console.firebase.google.com
-        const firebaseConfig = {
-            apiKey: "your-api-key-here",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project-id.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "your-app-id-here"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        
-        // Initialize reCAPTCHA verifier
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-            'size': 'invisible',
-            'callback': (response) => {
-                console.log('reCAPTCHA solved');
-            },
-            'expired-callback': () => {
-                console.log('reCAPTCHA expired');
-            }
-        });
-        
         // Simulate user storage
         let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
         
@@ -336,6 +614,7 @@
         
         // OTP variables
         let currentPhoneNumber = '';
+        let generatedOTP = '';
         let resendTimer = null;
         let countdown = 30;
         
@@ -431,65 +710,21 @@
             }
         }
         
-        // Firebase OTP Functions
-        let confirmationResult = null;
-        
-        function sendFirebaseOTP(phoneNumber) {
-            const fullPhoneNumber = '+91' + phoneNumber; // Add country code
-            const appVerifier = window.recaptchaVerifier;
-            
-            return firebase.auth().signInWithPhoneNumber(fullPhoneNumber, appVerifier)
-                .then((result) => {
-                    confirmationResult = result;
-                    console.log('OTP sent successfully via Firebase');
-                    showStatus('OTP sent to your phone', 'success');
-                    return true;
-                })
-                .catch((error) => {
-                    console.error('Error sending OTP:', error);
-                    if (error.code === 'auth/too-many-requests') {
-                        showStatus('Too many requests. Please try again later.', 'error');
-                    } else if (error.code === 'auth/invalid-phone-number') {
-                        showStatus('Invalid phone number format', 'error');
-                    } else {
-                        showStatus('Failed to send OTP. Please try again.', 'error');
-                    }
-                    return false;
-                });
-        }
-        
-        function verifyFirebaseOTP(code) {
-            if (!confirmationResult) {
-                showStatus('Please request OTP first', 'error');
-                return Promise.resolve(false);
-            }
-            
-            return confirmationResult.confirm(code)
-                .then((result) => {
-                    const user = result.user;
-                    console.log('Phone verification successful:', user.uid);
-                    showStatus('Phone verified successfully!', 'success');
-                    return true;
-                })
-                .catch((error) => {
-                    console.error('Error verifying OTP:', error);
-                    if (error.code === 'auth/invalid-verification-code') {
-                        showStatus('Invalid OTP. Please check and try again.', 'error');
-                    } else if (error.code === 'auth/code-expired') {
-                        showStatus('OTP has expired. Please request a new one.', 'error');
-                    } else {
-                        showStatus('Verification failed. Please try again.', 'error');
-                    }
-                    return false;
-                });
+        function generateOTP() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
         }
         
         function showOTPScreen(phoneNumber) {
             currentPhoneNumber = phoneNumber;
+            generatedOTP = generateOTP();
             
             document.getElementById('phoneScreen').style.display = 'none';
             document.getElementById('otpScreen').style.display = 'block';
             document.getElementById('sentToNumber').textContent = phoneNumber;
+            
+            // Show the OTP in console for demo purposes
+            console.log(`OTP for ${phoneNumber}: ${generatedOTP}`);
+            showStatus(`OTP sent to ${phoneNumber}: ${generatedOTP} (Demo mode)`, 'success');
             
             startResendTimer();
             
@@ -524,14 +759,10 @@
         }
         
         function resendOTP() {
-            setLoading(true, 'resend');
-            sendFirebaseOTP(currentPhoneNumber)
-                .then((success) => {
-                    if (success) {
-                        startResendTimer();
-                    }
-                    setLoading(false, 'resend');
-                });
+            generatedOTP = generateOTP();
+            console.log(`New OTP for ${currentPhoneNumber}: ${generatedOTP}`);
+            showStatus(`New OTP sent to ${currentPhoneNumber}: ${generatedOTP} (Demo mode)`, 'success');
+            startResendTimer();
         }
         
         // Phone form submission
@@ -544,14 +775,11 @@
             setLoading(true);
             hideStatus();
             
-            // Send OTP via Firebase
-            const success = await sendFirebaseOTP(phoneNumber);
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
             setLoading(false);
-            
-            if (success) {
-                showOTPScreen(phoneNumber);
-            }
+            showOTPScreen(phoneNumber);
         });
         
         // OTP form submission
@@ -565,10 +793,10 @@
                 setLoading(true, 'verify');
                 hideStatus();
                 
-                // Verify OTP via Firebase
-                const isValid = await verifyFirebaseOTP(enteredOTP);
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 
-                if (isValid) {
+                if (enteredOTP === generatedOTP) {
                     // OTP verified successfully
                     showStatus('OTP verified successfully!', 'success');
                     
@@ -594,7 +822,7 @@
                         }
                     }, 1000);
                 } else {
-                    // OTP verification failed - error already shown by verifyFirebaseOTP
+                    // OTP verification failed
                     showError('Invalid OTP. Please try again.', 'otp');
                     showStatus('Invalid OTP. Please check and try again.', 'error');
                 }
