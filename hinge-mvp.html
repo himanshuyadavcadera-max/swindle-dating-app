@@ -277,6 +277,122 @@
             font-size: 14px;
         }
         
+        /* Likes Screen Styles */
+        .likes-counter {
+            background: linear-gradient(45deg, #ff6b6b, #e91e63);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        }
+        
+        .current-like-container {
+            position: relative;
+        }
+        
+        .like-profile-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 3px solid #ff6b6b;
+            animation: likeGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes likeGlow {
+            0% { box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 0 20px rgba(255, 107, 107, 0.3); }
+            100% { box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 0 30px rgba(255, 107, 107, 0.6); }
+        }
+        
+        .like-profile-card .profile-photos {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+        
+        .like-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10;
+            animation: bounce 1s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .like-actions {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            justify-content: center;
+        }
+        
+        .like-action-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .like-pass-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .like-pass-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+        
+        .like-match-btn {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .like-match-btn:hover {
+            background: #388e3c;
+            transform: scale(1.1);
+        }
+        
+        .likes-queue-info {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .likes-queue-info h3 {
+            color: #e91e63;
+            margin-bottom: 8px;
+        }
+        
+        .likes-queue-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        
         /* Forms */
         .form-group {
             margin-bottom: 20px;
@@ -1248,6 +1364,7 @@
             <div class="app-title">💕 Swindler</div>
             <div class="nav-menu">
                 <button class="nav-btn active" onclick="showScreen('discover')" id="discoverBtn">🔍</button>
+                <button class="nav-btn" onclick="showScreen('likes')" id="likesBtn">❤️</button>
                 <button class="nav-btn" onclick="showScreen('matches')" id="matchesBtn">💬</button>
                 <button class="nav-btn" onclick="showScreen('profile')" id="profileBtn">👤</button>
             </div>
@@ -1260,6 +1377,22 @@
                 <div class="empty-state-icon">💔</div>
                 <h3>No more profiles</h3>
                 <p>Check back later for new people!</p>
+            </div>
+        </div>
+
+        <!-- Likes Screen -->
+        <div id="likes" class="screen">
+            <h2 style="margin-bottom: 20px;">Who Likes You ❤️</h2>
+            <div id="likesCounter" class="likes-counter">
+                <span id="likesCount">0</span> people liked you
+            </div>
+            <div id="currentLikeProfile" class="current-like-container">
+                <!-- Current person who liked you will be shown here -->
+            </div>
+            <div id="likesEmpty" class="empty-state">
+                <div class="empty-state-icon">💕</div>
+                <h3>No likes yet</h3>
+                <p>Be patient! Someone special will like you soon.</p>
             </div>
         </div>
 
@@ -1600,6 +1733,8 @@
         let currentProfileIndex = 0;
         let userMatches = [];
         let userLikes = [];
+        let likesQueue = []; // Queue of people who liked the current user
+        let currentLikeIndex = 0; // Current position in the likes queue
         let userPhotos = []; // Store user's photos
         let currentPhotoSlot = 0; // Track which photo slot is being edited
         let currentChatUser = null; // Current chat partner
@@ -1733,6 +1868,7 @@
             loadUserData();
             loadProfiles();
             loadMatches();
+            generateDemoLikes(); // Add demo likes for the user
             showCurrentProfile();
             populateProfileForm();
             
@@ -1788,6 +1924,49 @@
             
             userLikes = JSON.parse(localStorage.getItem(`user_likes_${currentUser.phone}`) || '[]');
             userMatches = JSON.parse(localStorage.getItem(`user_matches_${currentUser.phone}`) || '[]');
+        }
+        
+        function generateDemoLikes() {
+            // Check if demo likes already exist
+            const existingLikes = JSON.parse(localStorage.getItem(`likes_queue_${currentUser.phone}`) || '[]');
+            
+            // Only generate demo likes if none exist
+            if (existingLikes.length === 0) {
+                const demoLikers = [
+                    {
+                        phone: 'demo_liker_1',
+                        name: 'Alex',
+                        age: 26,
+                        bio: 'Love hiking and good coffee ☕️ Looking for someone to explore the city with!',
+                        location: 'Downtown',
+                        gender: 'Woman',
+                        lookingFor: 'serious relationship',
+                        likedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+                    },
+                    {
+                        phone: 'demo_liker_2',
+                        name: 'Jamie',
+                        age: 24,
+                        bio: 'Artist and dog lover 🎨🐕 Netflix enthusiast seeking a cuddle buddy!',
+                        location: 'Uptown',
+                        gender: 'Non-binary',
+                        lookingFor: 'casual dating',
+                        likedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() // 4 hours ago
+                    },
+                    {
+                        phone: 'demo_liker_3',
+                        name: 'Morgan',
+                        age: 28,
+                        bio: 'Foodie and fitness enthusiast 🍕💪 Always up for trying new restaurants!',
+                        location: 'Midtown',
+                        gender: 'Man',
+                        lookingFor: 'something real',
+                        likedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() // 6 hours ago
+                    }
+                ];
+                
+                localStorage.setItem(`likes_queue_${currentUser.phone}`, JSON.stringify(demoLikers));
+            }
         }
         
         function loadProfiles() {
@@ -1899,6 +2078,9 @@
             const profile = userProfiles[currentProfileIndex];
             userLikes.push(profile.id);
             localStorage.setItem(`user_likes_${currentUser.phone}`, JSON.stringify(userLikes));
+            
+            // Add current user to the liked profile's likes queue
+            addToLikesQueue(profile.id, currentUser);
             
             // Check if it's a match (simulate random matching for demo)
             const isMatch = Math.random() > 0.6; // 40% chance of match
@@ -2504,6 +2686,8 @@
             if (screenName === 'discover') {
                 loadProfiles();
                 showCurrentProfile();
+            } else if (screenName === 'likes') {
+                loadLikesScreen();
             } else if (screenName === 'matches') {
                 loadMatches();
             }
@@ -2514,6 +2698,169 @@
                 // Clear user data but keep it for re-login
                 window.location.href = 'login-demo.html';
             }
+        }
+        
+        // Likes Queue Functions
+        function addToLikesQueue(profileId, likerUser) {
+            // Get the existing likes queue for the profile
+            const existingQueue = JSON.parse(localStorage.getItem(`likes_queue_${profileId}`) || '[]');
+            
+            // Check if this user already liked this profile
+            const alreadyLiked = existingQueue.find(like => like.phone === likerUser.phone);
+            if (!alreadyLiked) {
+                existingQueue.push({
+                    ...likerUser,
+                    likedAt: new Date().toISOString()
+                });
+                localStorage.setItem(`likes_queue_${profileId}`, JSON.stringify(existingQueue));
+            }
+        }
+        
+        function loadLikesScreen() {
+            if (!currentUser) return;
+            
+            // Load likes queue for current user
+            likesQueue = JSON.parse(localStorage.getItem(`likes_queue_${currentUser.phone}`) || '[]');
+            
+            const likesCount = document.getElementById('likesCount');
+            const likesEmpty = document.getElementById('likesEmpty');
+            const currentLikeProfile = document.getElementById('currentLikeProfile');
+            const likesCounter = document.getElementById('likesCounter');
+            
+            // Update likes counter
+            likesCount.textContent = likesQueue.length;
+            
+            if (likesQueue.length === 0) {
+                likesEmpty.style.display = 'block';
+                currentLikeProfile.style.display = 'none';
+                likesCounter.style.display = 'block';
+            } else {
+                likesEmpty.style.display = 'none';
+                currentLikeProfile.style.display = 'block';
+                likesCounter.style.display = 'block';
+                currentLikeIndex = 0;
+                showCurrentLike();
+            }
+        }
+        
+        function showCurrentLike() {
+            if (!likesQueue || likesQueue.length === 0 || currentLikeIndex >= likesQueue.length) {
+                loadLikesScreen(); // Refresh if no more likes
+                return;
+            }
+            
+            const liker = likesQueue[currentLikeIndex];
+            const currentLikeProfile = document.getElementById('currentLikeProfile');
+            
+            // Generate random photos for the liker
+            const photos = [
+                `https://picsum.photos/400/600?random=${liker.phone}&sig=1`,
+                `https://picsum.photos/400/600?random=${liker.phone}&sig=2`,
+                `https://picsum.photos/400/600?random=${liker.phone}&sig=3`
+            ];
+            
+            currentLikeProfile.innerHTML = `
+                <div class="likes-queue-info">
+                    <h3>Someone likes you! 💕</h3>
+                    <p>Decide on this person to see the next one</p>
+                </div>
+                
+                <div class="like-profile-card">
+                    <div class="like-badge">Liked You ❤️</div>
+                    
+                    <div class="profile-photos">
+                        <div class="photo-container">
+                            <img src="${photos[0]}" alt="${liker.name}" class="photo active">
+                            <img src="${photos[1]}" alt="${liker.name}" class="photo">
+                            <img src="${photos[2]}" alt="${liker.name}" class="photo">
+                        </div>
+                        <div class="photo-indicators">
+                            <span class="indicator active"></span>
+                            <span class="indicator"></span>
+                            <span class="indicator"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-info">
+                        <h2>${liker.name || 'Anonymous'}, ${liker.age || '25'}</h2>
+                        <p class="location">📍 ${liker.location || 'Nearby'}</p>
+                        <p class="bio">${liker.bio || 'Hey there! 👋'}</p>
+                        
+                        <div class="profile-details">
+                            <div class="detail-item">
+                                <span class="detail-icon">👤</span>
+                                <span>${liker.gender || 'Prefers not to say'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-icon">💕</span>
+                                <span>Looking for ${liker.lookingFor || 'connection'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="like-actions">
+                        <button class="like-action-btn like-pass-btn" onclick="passOnLike()">
+                            ❌
+                        </button>
+                        <button class="like-action-btn like-match-btn" onclick="matchWithLike()">
+                            ❤️
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add photo navigation
+            addPhotoNavigation();
+        }
+        
+        function passOnLike() {
+            // Remove current like from queue
+            likesQueue.splice(currentLikeIndex, 1);
+            localStorage.setItem(`likes_queue_${currentUser.phone}`, JSON.stringify(likesQueue));
+            
+            // Show next like or refresh screen
+            showCurrentLike();
+            
+            // Update counter
+            document.getElementById('likesCount').textContent = likesQueue.length;
+        }
+        
+        function matchWithLike() {
+            const liker = likesQueue[currentLikeIndex];
+            
+            // Add to matches
+            userMatches.push({
+                id: liker.phone,
+                name: liker.name || 'Anonymous',
+                age: liker.age || 25,
+                photos: [
+                    `https://picsum.photos/400/600?random=${liker.phone}&sig=1`,
+                    `https://picsum.photos/400/600?random=${liker.phone}&sig=2`,
+                    `https://picsum.photos/400/600?random=${liker.phone}&sig=3`
+                ],
+                bio: liker.bio || 'Hey there! 👋',
+                location: liker.location || 'Nearby',
+                gender: liker.gender || 'Prefers not to say',
+                lookingFor: liker.lookingFor || 'connection'
+            });
+            
+            localStorage.setItem(`user_matches_${currentUser.phone}`, JSON.stringify(userMatches));
+            
+            // Remove from likes queue
+            likesQueue.splice(currentLikeIndex, 1);
+            localStorage.setItem(`likes_queue_${currentUser.phone}`, JSON.stringify(likesQueue));
+            
+            // Show match notification
+            showMatchNotification(liker.name || 'Someone special');
+            
+            // Show next like or refresh screen
+            showCurrentLike();
+            
+            // Update counter
+            document.getElementById('likesCount').textContent = likesQueue.length;
+            
+            // Update matches screen
+            loadMatches();
         }
         
         // Location Picker Functions
