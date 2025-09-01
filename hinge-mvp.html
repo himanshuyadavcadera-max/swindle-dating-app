@@ -1513,11 +1513,6 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Bio</label>
-                    <textarea id="profileBio" class="form-textarea" placeholder="Tell us about yourself..."></textarea>
-                </div>
-                
-                <div class="form-group">
                     <label class="form-label">Photos <span style="color: #e91e63;">*</span></label>
                     <div class="photo-requirements" id="photoRequirements">
                         Add 3-6 photos to show your personality! (3 minimum required)
@@ -1561,11 +1556,6 @@
                         </div>
                     </div>
                     <input type="file" id="photoInput" class="hidden-file-input" accept="image/*" onchange="handlePhotoSelect(event)">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Interests</label>
-                    <input type="text" id="profileInterests" class="form-input" placeholder="e.g., Music, Travel, Cooking">
                 </div>
                 
                 <button type="submit" class="btn">Save Profile</button>
@@ -1937,7 +1927,6 @@
                         phone: 'demo_liker_1',
                         name: 'Alex',
                         age: 26,
-                        bio: 'Love hiking and good coffee ☕️ Looking for someone to explore the city with!',
                         location: 'Downtown',
                         gender: 'Woman',
                         lookingFor: 'serious relationship',
@@ -1947,7 +1936,6 @@
                         phone: 'demo_liker_2',
                         name: 'Jamie',
                         age: 24,
-                        bio: 'Artist and dog lover 🎨🐕 Netflix enthusiast seeking a cuddle buddy!',
                         location: 'Uptown',
                         gender: 'Non-binary',
                         lookingFor: 'casual dating',
@@ -1957,7 +1945,6 @@
                         phone: 'demo_liker_3',
                         name: 'Morgan',
                         age: 28,
-                        bio: 'Foodie and fitness enthusiast 🍕💪 Always up for trying new restaurants!',
                         location: 'Midtown',
                         gender: 'Man',
                         lookingFor: 'something real',
@@ -1980,7 +1967,7 @@
         // Check if user profile is complete
         function isProfileComplete() {
             if (!currentUser.name || !currentUser.age || !currentUser.gender || 
-                !currentUser.sexuality || !currentUser.location || !currentUser.bio) {
+                !currentUser.sexuality || !currentUser.location) {
                 return false;
             }
             
@@ -2029,8 +2016,6 @@
                         <div class="profile-info">
                             <div class="profile-name">${profile.name}, ${profile.age}</div>
                             <div class="profile-details">📍 ${profile.location}</div>
-                            <div class="profile-bio">${profile.bio}</div>
-                            <div class="profile-details"><strong>Interests:</strong> ${profile.interests}</div>
                         </div>
                         <div class="profile-completion-overlay">
                             <div class="completion-icon">🔒</div>
@@ -2054,8 +2039,6 @@
                         <div class="profile-info">
                             <div class="profile-name">${profile.name}, ${profile.age}</div>
                             <div class="profile-details">📍 ${profile.location}</div>
-                            <div class="profile-bio">${profile.bio}</div>
-                            <div class="profile-details"><strong>Interests:</strong> ${profile.interests}</div>
                         </div>
                         <div class="action-buttons">
                             <button class="action-btn pass-btn" onclick="passProfile()">✖️</button>
@@ -2563,12 +2546,6 @@
             if (currentUser.location) {
                 document.getElementById('profileLocation').value = currentUser.location;
             }
-            if (currentUser.bio) {
-                document.getElementById('profileBio').value = currentUser.bio;
-            }
-            if (currentUser.interests) {
-                document.getElementById('profileInterests').value = currentUser.interests;
-            }
             
             // Load saved photos
             if (currentUser.photos && currentUser.photos.length > 0) {
@@ -2640,8 +2617,6 @@
                     max: parseInt(document.getElementById('maxAge').value)
                 },
                 location: document.getElementById('profileLocation').value,
-                bio: document.getElementById('profileBio').value,
-                interests: document.getElementById('profileInterests').value,
                 photos: userPhotos.filter(photo => photo !== null && photo !== undefined) // Save only filled photos
             };
             
@@ -2784,7 +2759,6 @@
                     <div class="profile-info">
                         <h2>${liker.name || 'Anonymous'}, ${liker.age || '25'}</h2>
                         <p class="location">📍 ${liker.location || 'Nearby'}</p>
-                        <p class="bio">${liker.bio || 'Hey there! 👋'}</p>
                         
                         <div class="profile-details">
                             <div class="detail-item">
@@ -2838,7 +2812,6 @@
                     `https://picsum.photos/400/600?random=${liker.phone}&sig=2`,
                     `https://picsum.photos/400/600?random=${liker.phone}&sig=3`
                 ],
-                bio: liker.bio || 'Hey there! 👋',
                 location: liker.location || 'Nearby',
                 gender: liker.gender || 'Prefers not to say',
                 lookingFor: liker.lookingFor || 'connection'
